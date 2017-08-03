@@ -7,19 +7,18 @@ import Task.Parallel as Task
 import Time
 
 
-tasks : Task String (List ())
+tasks : Task String (List String)
 tasks =
     Task.parallel
-        [ Process.sleep (1.5 * Time.second) |> Task.map (Debug.log "done")
-        , Process.sleep (1 * Time.second) |> Task.andThen (\_ -> Task.fail "oi") |> Task.map (Debug.log "done")
-        , Process.sleep (0.8 * Time.second) |> Task.map (Debug.log "done")
-        , Process.sleep (1.2 * Time.second) |> Task.map (Debug.log "done")
+        [ Process.sleep (1.5 * Time.second) |> Task.map (always "first")
+        , Process.sleep (1 * Time.second) |> Task.map (always "second")
+        , Process.sleep (0.8 * Time.second) |> Task.map (always "third")
+        , Process.sleep (1.2 * Time.second) |> Task.map (always "fourth")
         ]
-        |> Task.map (Debug.log "all done")
 
 
 type Msg
-    = Ran (Result String (List ()))
+    = Ran (Result String (List String))
 
 
 type Model
@@ -33,7 +32,11 @@ init =
 
 
 update : Msg -> Model -> ( Model, Cmd msg )
-update (Ran _) _ =
+update msg _ =
+    let
+        _ =
+            Debug.log "msg" msg
+    in
     Done ! []
 
 

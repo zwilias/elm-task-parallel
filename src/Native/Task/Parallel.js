@@ -1,70 +1,86 @@
 var _user$project$Native_Task_Parallel = (function() {
-  var binding = _elm_lang$core$Native_Scheduler.nativeBinding;
-  var andThen = _elm_lang$core$Native_Scheduler.andThen;
-  var onError = _elm_lang$core$Native_Scheduler.onError;
-  var succeed = _elm_lang$core$Native_Scheduler.succeed;
-  var rawSpawn = _elm_lang$core$Native_Scheduler.rawSpawn;
-  var send = _elm_lang$core$Native_Scheduler.send;
-  var receive = _elm_lang$core$Native_Scheduler.receive;
-  var tuple0 = _elm_lang$core$Native_Utils.Tuple0;
+    var Err = "Err";
+    var Ok = "Ok";
 
-  var parallel = function(tasks) {
-    return binding(function(callback) {
-      var results = [];
-      var received = 0;
-      var taskCount = 0;
+    var Scheduler = _elm_lang$core$Native_Scheduler;
+    var Utils = _elm_lang$core$Native_Utils;
+    var List = _elm_lang$core$Native_List;
 
-      var receiver = receive(function(result) {
-        console.log(result);
-        received += 1;
-        results[result.idx] = result.val;
+    var makeProcess = function(receiver) {
+        return {
+            ctor: "_Process",
+            id: Utils.guid(),
+            root: receiver,
+            stack: null,
+            mailbox: []
+        };
+    };
 
-        console.log(received, taskCount);
-        if (received === taskCount) {
-          callback(succeed(results));
-          return succeed(tuple0);
-        }
+    var makeReceiver = function(taskCount, callback) {
+        var results = [];
+        var received = 0;
+
+        var receiver = Scheduler.receive(function(result) {
+            results[result.idx] = result.val;
+
+            if (result.status === Err) {
+                callback(Scheduler.fail(result.val));
+                return Scheduler.fail(Utils.tuple0);
+            }
+
+            if (++received === taskCount) {
+                callback(Scheduler.succeed(List.fromArray(results)));
+                return Scheduler.succeed(Utils.tuple0);
+            }
+
+            return receiver;
+        });
 
         return receiver;
-      });
+    };
 
-      var process = {
-        ctor: "_Process",
-        id: _elm_lang$core$Native_Utils.guid(),
-        root: receiver,
-        stack: null,
-        mailbox: []
-      };
+    var wrapper = function(f, status) {
+        return { f: f, status: status };
+    };
 
-      while (tasks.ctor !== "[]") {
-        var task = tasks._0;
-        tasks = tasks._1;
-
-        var sender = (function(idx) {
-          return A2(
-            onError,
-            function(err) {
-              return A2(send, process, { idx: idx, status: "Err", val: err });
-            },
-            A2(
-              andThen,
-              function(result) {
-                return A2(send, process, {
-                  idx: idx,
-                  status: "Ok",
-                  val: result
+    var wrapHelper = function(wrapper, idx, process, task) {
+        return A2(
+            wrapper.f,
+            function(result) {
+                return A2(Scheduler.send, process, {
+                    idx: idx,
+                    status: wrapper.status,
+                    val: result
                 });
-              },
-              task
-            )
-          );
-        })(taskCount);
+            },
+            task
+        );
+    };
 
-        rawSpawn(sender);
-        taskCount++;
-      }
-    });
-  };
+    var wrap = function(idx, process, task) {
+        [
+            wrapper(Scheduler.onError, Err),
+            wrapper(Scheduler.andThen, Ok)
+        ].forEach(function(wrapper) {
+            task = wrapHelper(wrapper, idx, process, task);
+        });
 
-  return { parallel: parallel };
+        return task;
+    };
+
+    var parallel = function(tasks_) {
+        return Scheduler.nativeBinding(function(callback) {
+            var tasks = List.toArray(tasks_);
+            var receiver = makeReceiver(tasks.length, callback);
+            var process = makeProcess(receiver);
+
+            for (var i = 0; i < tasks.length; i++) {
+                var task = tasks[i];
+
+                Scheduler.rawSpawn(wrap(i, process, task));
+            }
+        });
+    };
+
+    return { parallel: parallel };
 })();
