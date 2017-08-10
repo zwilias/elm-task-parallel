@@ -1,6 +1,6 @@
 var _user$project$Native_Task_Parallel = (function() {
-    var Err = "Err";
-    var Ok = "Ok";
+    var Err = 'Err';
+    var Ok = 'Ok';
 
     var Scheduler = _elm_lang$core$Native_Scheduler;
     var Utils = _elm_lang$core$Native_Utils;
@@ -8,7 +8,7 @@ var _user$project$Native_Task_Parallel = (function() {
 
     var makeProcess = function(receiver) {
         return {
-            ctor: "_Process",
+            ctor: '_Process',
             id: Utils.guid(),
             root: receiver,
             stack: null,

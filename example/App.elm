@@ -11,7 +11,7 @@ tasks : Task String (List String)
 tasks =
     Task.parallel
         [ Process.sleep (1.5 * Time.second) |> Task.map (always "first")
-        , Process.sleep (1 * Time.second) |> Task.map (always "second")
+        , Process.sleep (1.0 * Time.second) |> Task.map (always "second")
         , Process.sleep (0.8 * Time.second) |> Task.map (always "third")
         , Process.sleep (1.2 * Time.second) |> Task.map (always "fourth")
         ]

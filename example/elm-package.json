@@ -1,9 +1,9 @@
 {
   "version": "1.0.0",
-  "summary": "Parallel tasks in Elm",
-  "repository": "https://github.com/zwilias/elm-task-parallel.git",
+  "summary": "helpful summary of your project, less than 80 characters",
+  "repository": "https://github.com/user/project.git",
   "license": "BSD3",
-  "source-directories": ["src"],
+  "source-directories": [".", "../src"],
   "native-modules": true,
   "exposed-modules": [],
   "dependencies": {
